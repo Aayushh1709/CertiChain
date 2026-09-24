@@ -1,0 +1,12 @@
+package com.certichain.model;
+
+public enum AuditAction {
+    ISSUED,
+    REVOKED,
+    VERIFIED,
+    INSTITUTION_APPROVED,
+    INSTITUTION_REJECTED,
+    INSTITUTION_SUSPENDED,
+    ISSUER_AUTHORIZED,
+    ISSUER_REVOKED
+}
