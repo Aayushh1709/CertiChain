@@ -3,6 +3,7 @@ package com.certichain.config;
 import com.certichain.model.*;
 import com.certichain.repository.*;
 import com.certichain.service.BlockchainService;
+import com.certichain.service.CryptoService;
 import com.certichain.util.HashUtil;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -24,16 +25,19 @@ public class DataSeeder implements CommandLineRunner {
     private final CertificateRepository certificateRepository;
     private final AuditLogRepository auditLogRepository;
     private final BlockchainService blockchainService;
+    private final CryptoService cryptoService;
     private final PasswordEncoder passwordEncoder;
 
     public DataSeeder(UserRepository userRepository, InstitutionRepository institutionRepository,
                       CertificateRepository certificateRepository, AuditLogRepository auditLogRepository,
-                      BlockchainService blockchainService, PasswordEncoder passwordEncoder) {
+                      BlockchainService blockchainService, CryptoService cryptoService,
+                      PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.institutionRepository = institutionRepository;
         this.certificateRepository = certificateRepository;
         this.auditLogRepository = auditLogRepository;
         this.blockchainService = blockchainService;
+        this.cryptoService = cryptoService;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -104,6 +108,8 @@ public class DataSeeder implements CommandLineRunner {
         student1.setPasswordHash(passwordEncoder.encode("student123"));
         student1.setFullName("Ayush Mishra");
         student1.setRole(Role.STUDENT);
+        student1.setApaarId("1234-5678-9012");
+        student1.setDigilockerId("DL-AYUSH-99");
         student1 = userRepository.save(student1);
 
         User student2 = new User();
@@ -111,9 +117,11 @@ public class DataSeeder implements CommandLineRunner {
         student2.setPasswordHash(passwordEncoder.encode("student123"));
         student2.setFullName("Priya Patel");
         student2.setRole(Role.STUDENT);
+        student2.setApaarId("9876-5432-1098");
+        student2.setDigilockerId("DL-PRIYA-88");
         student2 = userRepository.save(student2);
 
-        // 7. Issue sample certificates
+        // 7. Issue sample certificates (now with digital signatures!)
         issueSampleCertificate(student1, iitDelhi, "B.Tech Computer Science and Engineering",
                 "A+", "CC-DEMO0001", LocalDate.of(2026, 6, 15));
         issueSampleCertificate(student1, iitDelhi, "M.Tech Artificial Intelligence",
@@ -137,35 +145,42 @@ public class DataSeeder implements CommandLineRunner {
     private void issueSampleCertificate(User student, Institution institution,
                                          String courseName, String grade,
                                          String certUid, LocalDate issueDate) {
+        // 1. Compute certificate hash
         String certificateHash = HashUtil.computeCertificateHash(
                 student.getId(), courseName, institution.getId(),
                 grade, issueDate.toString(), certUid
         );
 
-        // Record on simulated blockchain
+        // 2. *** DIGITAL SIGNATURE *** — Sign the hash with RSA private key
+        String digitalSignature = cryptoService.sign(certificateHash);
+
+        // 3. Record on simulated blockchain
         Map<String, Object> bcResult = blockchainService.issueCertificate(
                 certificateHash, institution.getWalletAddress());
 
-        // Create certificate record
+        // 4. Create certificate record (including the digital signature)
         Certificate cert = new Certificate();
         cert.setCertificateUid(certUid);
         cert.setInstitution(institution);
         cert.setStudent(student);
         cert.setStudentName(student.getFullName());
         cert.setStudentRollNo("2022" + student.getId() + "001");
+        cert.setApaarId(student.getApaarId());
         cert.setCourseName(courseName);
         cert.setGrade(grade);
         cert.setIssueDate(issueDate);
         cert.setCertificateHash(certificateHash);
+        cert.setDigitalSignature(digitalSignature);
         cert.setPdfPath("./data/certificates/" + certUid + ".pdf");
         cert.setTxHash((String) bcResult.get("txHash"));
         cert.setBlockNumber((Long) bcResult.get("blockNumber"));
         cert.setStatus(CertificateStatus.VALID);
         cert = certificateRepository.save(cert);
 
-        // Audit log
+        // 5. Audit log
         AuditLog log = new AuditLog(AuditAction.ISSUED, "registrar@iitd.ac.in",
-                "Certificate " + certUid + " issued to " + student.getFullName());
+                "Certificate " + certUid + " issued to " + student.getFullName()
+                        + " [Signed with SHA256withRSA]");
         log.setCertificate(cert);
         log.setInstitution(institution);
         log.setTxHash(cert.getTxHash());

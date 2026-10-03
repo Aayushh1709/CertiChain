@@ -98,7 +98,7 @@ export default function VerifyPage() {
           <form onSubmit={handleVerify}>
             {mode === 'id' && (
               <div className="mb-6">
-                <label className="block text-sm font-semibold text-[var(--color-text-secondary)] mb-2">Certificate ID</label>
+                <label className="block text-sm font-semibold text-[var(--color-text-secondary)] mb-2">Certificate ID or APAAR ID</label>
                 <div className="relative">
                   <HiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] text-xl" />
                   <input
@@ -106,7 +106,7 @@ export default function VerifyPage() {
                     value={certificateId}
                     onChange={(e) => setCertificateId(e.target.value)}
                     className="input-field !pl-12 text-base font-mono"
-                    placeholder="e.g. CC-DEMO0001"
+                    placeholder="e.g. CC-DEMO0001 or 1234-5678-9012"
                     required
                   />
                 </div>
@@ -181,6 +181,8 @@ export default function VerifyPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <InfoRow label="Certificate ID" value={result.certificateUid} isMono />
                   <InfoRow label="Student Name" value={result.studentName} />
+                  <InfoRow label="APAAR ID" value={result.apaarId} isMono />
+                  <InfoRow label="DigiLocker Linked ID" value={result.digilockerId} isMono />
                   <InfoRow label="Course / Degree" value={result.courseName} />
                   <InfoRow label="Grade / Score" value={result.grade} />
                   <InfoRow label="Issue Date" value={result.issueDate} />

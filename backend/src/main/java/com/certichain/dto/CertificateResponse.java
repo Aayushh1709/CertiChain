@@ -22,6 +22,8 @@ public class CertificateResponse {
     private Long institutionId;
     private String pdfUrl;
     private String verifyUrl;
+    private String digitalSignature;
+    private String qrPayload;
 
     public CertificateResponse() {}
 
@@ -79,4 +81,10 @@ public class CertificateResponse {
 
     public String getVerifyUrl() { return verifyUrl; }
     public void setVerifyUrl(String verifyUrl) { this.verifyUrl = verifyUrl; }
+
+    public String getDigitalSignature() { return digitalSignature; }
+    public void setDigitalSignature(String digitalSignature) { this.digitalSignature = digitalSignature; }
+
+    public String getQrPayload() { return qrPayload; }
+    public void setQrPayload(String qrPayload) { this.qrPayload = qrPayload; }
 }

@@ -47,8 +47,22 @@ export default function StudentDashboard({ showToast }) {
   return (
     <div style={{ maxWidth: '80rem', margin: '0 auto', padding: '2rem 1.5rem' }}>
       <div className="mb-8 animate-fade-in border-b border-white/10 pb-6">
-        <h1 className="text-3xl sm:text-4xl font-bold mb-2">My Credentials</h1>
-        <p className="text-[var(--color-text-secondary)] text-sm">View, download, and share your blockchain-anchored academic certificates</p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl sm:text-4xl font-bold mb-2">My Credentials</h1>
+            <p className="text-[var(--color-text-secondary)] text-sm">View, download, and share your blockchain-anchored academic certificates</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs font-semibold text-emerald-400">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              DigiLocker Linked
+            </div>
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-indigo-500/10 border border-indigo-500/30 text-xs font-semibold text-indigo-300">
+              <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></span>
+              APAAR ID: 1234-5678-9012
+            </div>
+          </div>
+        </div>
       </div>
 
       {certificates.length === 0 ? (

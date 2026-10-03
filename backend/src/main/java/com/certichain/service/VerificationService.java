@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -21,13 +22,16 @@ public class VerificationService {
 
     private final CertificateRepository certificateRepository;
     private final BlockchainService blockchainService;
+    private final CryptoService cryptoService;
     private final AuditLogRepository auditLogRepository;
 
     public VerificationService(CertificateRepository certificateRepository,
                                BlockchainService blockchainService,
+                               CryptoService cryptoService,
                                AuditLogRepository auditLogRepository) {
         this.certificateRepository = certificateRepository;
         this.blockchainService = blockchainService;
+        this.cryptoService = cryptoService;
         this.auditLogRepository = auditLogRepository;
     }
 
@@ -37,7 +41,12 @@ public class VerificationService {
     public VerificationResponse verifyByCertificateId(String certificateId) {
         Optional<Certificate> certOpt = certificateRepository.findByCertificateUid(certificateId);
         if (certOpt.isEmpty()) {
-            return VerificationResponse.invalid("Certificate ID not found. This certificate does not exist in our system.");
+            // Also check by APAAR ID
+            List<Certificate> apaarCerts = certificateRepository.findByApaarId(certificateId);
+            if (!apaarCerts.isEmpty()) {
+                return buildVerificationResponse(apaarCerts.get(0));
+            }
+            return VerificationResponse.invalid("Certificate ID or APAAR ID not found. No record exists in our system.");
         }
 
         Certificate cert = certOpt.get();
@@ -70,7 +79,8 @@ public class VerificationService {
         response.setTxHash((String) blockchainResult.get("txHash"));
         response.setBlockNumber((Long) blockchainResult.get("blockNumber"));
         response.setIssueTimestamp((LocalDateTime) blockchainResult.get("issueTimestamp"));
-        response.setMessage("Certificate verified on blockchain");
+        response.setMessage("Certificate verified on blockchain (signature not available for chain-only records)");
+        response.setSignatureValid(false); // Can't verify without stored signature
         return response;
     }
 
@@ -94,12 +104,14 @@ public class VerificationService {
         response.setCertificateHash(hash);
         response.setTxHash((String) blockchainResult.get("txHash"));
         response.setBlockNumber((Long) blockchainResult.get("blockNumber"));
+        response.setSignatureValid(false);
         return response;
     }
 
     private VerificationResponse buildVerificationResponse(Certificate cert) {
         VerificationResponse response = new VerificationResponse();
 
+        // ─── Step 1: Check revocation status ─────────────────────────────
         if (cert.getStatus() == CertificateStatus.REVOKED) {
             response.setValid(false);
             response.setStatus("REVOKED");
@@ -112,6 +124,25 @@ public class VerificationService {
             response.setMessage("Certificate is valid and verified on blockchain.");
         }
 
+        // ─── Step 2: Verify digital signature (RSA) ────────────────────
+        if (cert.getDigitalSignature() != null && !cert.getDigitalSignature().isEmpty()) {
+            boolean sigValid = cryptoService.verify(cert.getCertificateHash(), cert.getDigitalSignature());
+            response.setSignatureValid(sigValid);
+            response.setDigitalSignature(cert.getDigitalSignature());
+
+            if (!sigValid) {
+                response.setValid(false);
+                response.setStatus("TAMPERED");
+                response.setMessage("⚠ SIGNATURE VERIFICATION FAILED. The certificate data may have been tampered with.");
+            } else if (response.isValid()) {
+                response.setMessage("Certificate is valid — digital signature verified ✓ and blockchain record confirmed ✓");
+            }
+        } else {
+            response.setSignatureValid(false);
+            // Legacy certs without signature — still valid based on hash
+        }
+
+        // ─── Step 3: Populate certificate details ──────────────────────
         response.setCertificateUid(cert.getCertificateUid());
         response.setStudentName(cert.getStudentName());
         response.setCourseName(cert.getCourseName());
@@ -122,10 +153,13 @@ public class VerificationService {
         response.setTxHash(cert.getTxHash());
         response.setBlockNumber(cert.getBlockNumber());
         response.setIssueTimestamp(cert.getCreatedAt());
+        response.setApaarId(cert.getApaarId() != null ? cert.getApaarId() : (cert.getStudent() != null ? cert.getStudent().getApaarId() : null));
+        response.setDigilockerId(cert.getStudent() != null ? cert.getStudent().getDigilockerId() : null);
 
-        // Log verification
+        // ─── Step 4: Audit log ─────────────────────────────────────────
         AuditLog log = new AuditLog(AuditAction.VERIFIED, "public",
-                "Certificate " + cert.getCertificateUid() + " verified - " + response.getStatus());
+                "Certificate " + cert.getCertificateUid() + " verified - " + response.getStatus()
+                        + " | Signature: " + (response.isSignatureValid() ? "VALID" : "NOT VERIFIED"));
         log.setCertificate(cert);
         log.setInstitution(cert.getInstitution());
         auditLogRepository.save(log);

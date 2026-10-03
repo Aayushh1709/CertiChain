@@ -24,12 +24,18 @@ public class User {
     @Column(nullable = false)
     private Role role;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "institution_id")
     private Institution institution;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    @Column(name = "digilocker_id", unique = true)
+    private String digilockerId;
+
+    @Column(name = "apaar_id", unique = true)
+    private String apaarId;
 
     @Column(name = "is_active")
     private boolean isActive = true;
@@ -65,6 +71,12 @@ public class User {
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    public String getDigilockerId() { return digilockerId; }
+    public void setDigilockerId(String digilockerId) { this.digilockerId = digilockerId; }
+
+    public String getApaarId() { return apaarId; }
+    public void setApaarId(String apaarId) { this.apaarId = apaarId; }
 
     public boolean isActive() { return isActive; }
     public void setActive(boolean active) { isActive = active; }

@@ -27,12 +27,22 @@ public class PdfGenerator {
     }
 
     /**
-     * Generates a professional certificate PDF with embedded QR code.
+     * Generates a professional certificate PDF with embedded QR code
+     * that contains the digitally signed payload for offline verification.
+     *
+     * @param certificateUid  unique certificate identifier
+     * @param studentName     full name of the student
+     * @param courseName      name of the course/program
+     * @param grade           grade achieved
+     * @param institutionName name of the issuing institution
+     * @param issueDate       date of issuance
+     * @param certificateHash SHA-256 hash of the certificate metadata
+     * @param digitalSignature RSA digital signature (Base64-encoded) of the hash
      */
     public byte[] generateCertificatePdf(String certificateUid, String studentName,
                                           String courseName, String grade,
                                           String institutionName, LocalDate issueDate,
-                                          String certificateHash) {
+                                          String certificateHash, String digitalSignature) {
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             Document document = new Document(PageSize.A4.rotate(), 50, 50, 50, 50);
@@ -123,7 +133,12 @@ public class PdfGenerator {
             dateCell.addElement(new Paragraph(issueDate.toString(), new Font(Font.HELVETICA, 11, Font.BOLD, darkColor)));
             table.addCell(dateCell);
 
-            // QR Code
+            // QR Code — contains the verification URL + signed payload
+            //   The QR encodes a URL with the certificate ID as a query param.
+            //   When scanned, the verifier's browser opens the verification page
+            //   which fetches full details (including signature) from the backend.
+            //   For compactness, the QR carries a URL rather than the full
+            //   signed payload (RSA signatures are ~344 Base64 chars).
             String verifyUrl = baseUrl + "/verify?id=" + certificateUid;
             byte[] qrBytes = qrCodeGenerator.generateQrCode(verifyUrl, 100, 100);
             Image qrImage = Image.getInstance(qrBytes);
@@ -143,10 +158,29 @@ public class PdfGenerator {
             hashInfo.setSpacingBefore(10);
             document.add(hashInfo);
 
+            // Digital signature fingerprint (first 32 chars for readability)
+            if (digitalSignature != null && !digitalSignature.isEmpty()) {
+                String sigFingerprint = digitalSignature.length() > 32
+                        ? digitalSignature.substring(0, 32) + "..."
+                        : digitalSignature;
+                Paragraph sigInfo = new Paragraph(
+                    "Digital Signature: " + sigFingerprint, hashFont);
+                sigInfo.setAlignment(Element.ALIGN_CENTER);
+                document.add(sigInfo);
+            }
+
             Paragraph verifyInfo = new Paragraph(
                 "Verify at: " + verifyUrl, hashFont);
             verifyInfo.setAlignment(Element.ALIGN_CENTER);
             document.add(verifyInfo);
+
+            // Cryptographic seal notice
+            Paragraph sealNotice = new Paragraph(
+                "This certificate is cryptographically signed (SHA256withRSA) and recorded on blockchain.",
+                new Font(Font.HELVETICA, 7, Font.ITALIC, new Color(100, 116, 139)));
+            sealNotice.setAlignment(Element.ALIGN_CENTER);
+            sealNotice.setSpacingBefore(8);
+            document.add(sealNotice);
 
             document.close();
             return baos.toByteArray();

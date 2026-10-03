@@ -15,11 +15,11 @@ public class Certificate {
     @Column(name = "certificate_uid", nullable = false, unique = true)
     private String certificateUid;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "institution_id", nullable = false)
     private Institution institution;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "student_id", nullable = false)
     private User student;
 
@@ -28,6 +28,9 @@ public class Certificate {
 
     @Column(name = "student_roll_no")
     private String studentRollNo;
+
+    @Column(name = "apaar_id")
+    private String apaarId;
 
     @Column(name = "course_name", nullable = false)
     private String courseName;
@@ -40,6 +43,13 @@ public class Certificate {
 
     @Column(name = "certificate_hash", nullable = false, unique = true, length = 64)
     private String certificateHash;
+
+    /**
+     * RSA digital signature of the certificate hash (Base64-encoded).
+     * Proves the certificate was issued by the platform and has not been tampered with.
+     */
+    @Column(name = "digital_signature", columnDefinition = "TEXT")
+    private String digitalSignature;
 
     @Column(name = "pdf_path")
     private String pdfPath;
@@ -85,6 +95,9 @@ public class Certificate {
     public String getStudentRollNo() { return studentRollNo; }
     public void setStudentRollNo(String studentRollNo) { this.studentRollNo = studentRollNo; }
 
+    public String getApaarId() { return apaarId; }
+    public void setApaarId(String apaarId) { this.apaarId = apaarId; }
+
     public String getCourseName() { return courseName; }
     public void setCourseName(String courseName) { this.courseName = courseName; }
 
@@ -96,6 +109,9 @@ public class Certificate {
 
     public String getCertificateHash() { return certificateHash; }
     public void setCertificateHash(String certificateHash) { this.certificateHash = certificateHash; }
+
+    public String getDigitalSignature() { return digitalSignature; }
+    public void setDigitalSignature(String digitalSignature) { this.digitalSignature = digitalSignature; }
 
     public String getPdfPath() { return pdfPath; }
     public void setPdfPath(String pdfPath) { this.pdfPath = pdfPath; }

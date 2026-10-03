@@ -65,12 +65,18 @@ public class CertificateController {
     }
 
     @GetMapping("/institution")
-    public ResponseEntity<List<CertificateResponse>> getInstitutionCertificates(@AuthenticationPrincipal User user) {
+    public ResponseEntity<?> getInstitutionCertificates(@AuthenticationPrincipal User user) {
+        if (user.getInstitution() == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "You are not associated with any institution"));
+        }
         return ResponseEntity.ok(certificateService.getInstitutionCertificates(user.getInstitution().getId()));
     }
 
     @GetMapping("/students")
     public ResponseEntity<?> getStudents(@AuthenticationPrincipal User user) {
+        if (user.getInstitution() == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "You are not associated with any institution"));
+        }
         return ResponseEntity.ok(certificateService.getStudentsForInstitution(user.getInstitution().getId()));
     }
 

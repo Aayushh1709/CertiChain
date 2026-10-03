@@ -15,9 +15,13 @@ public class VerificationResponse {
     private String txHash;
     private Long blockNumber;
     private LocalDateTime issueTimestamp;
+    private String apaarId;
+    private String digilockerId;
     private String revocationReason;
     private LocalDateTime revokedAt;
     private String message;
+    private boolean signatureValid;
+    private String digitalSignature;
 
     public VerificationResponse() {}
 
@@ -80,6 +84,18 @@ public class VerificationResponse {
     public LocalDateTime getRevokedAt() { return revokedAt; }
     public void setRevokedAt(LocalDateTime revokedAt) { this.revokedAt = revokedAt; }
 
+    public String getApaarId() { return apaarId; }
+    public void setApaarId(String apaarId) { this.apaarId = apaarId; }
+
+    public String getDigilockerId() { return digilockerId; }
+    public void setDigilockerId(String digilockerId) { this.digilockerId = digilockerId; }
+
     public String getMessage() { return message; }
     public void setMessage(String message) { this.message = message; }
+
+    public boolean isSignatureValid() { return signatureValid; }
+    public void setSignatureValid(boolean signatureValid) { this.signatureValid = signatureValid; }
+
+    public String getDigitalSignature() { return digitalSignature; }
+    public void setDigitalSignature(String digitalSignature) { this.digitalSignature = digitalSignature; }
 }

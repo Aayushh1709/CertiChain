@@ -1,6 +1,7 @@
 package com.certichain.controller;
 
 import com.certichain.dto.VerificationResponse;
+import com.certichain.service.CryptoService;
 import com.certichain.service.VerificationService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,9 +17,12 @@ import java.util.Map;
 public class VerificationController {
 
     private final VerificationService verificationService;
+    private final CryptoService cryptoService;
 
-    public VerificationController(VerificationService verificationService) {
+    public VerificationController(VerificationService verificationService,
+                                   CryptoService cryptoService) {
         this.verificationService = verificationService;
+        this.cryptoService = cryptoService;
     }
 
     /**
@@ -63,5 +67,20 @@ public class VerificationController {
             results.add(verificationService.verifyByCertificateId(id));
         }
         return ResponseEntity.ok(results);
+    }
+
+    /**
+     * Returns the platform's RSA public key in PEM format.
+     * Third-party verifiers can use this key to independently verify
+     * digital signatures on CertiChain certificates.
+     */
+    @GetMapping("/public-key")
+    public ResponseEntity<Map<String, String>> getPublicKey() {
+        return ResponseEntity.ok(Map.of(
+                "algorithm", "SHA256withRSA",
+                "keySize", "2048",
+                "publicKeyPem", cryptoService.getPublicKeyPem(),
+                "publicKeyBase64", cryptoService.getPublicKeyBase64()
+        ));
     }
 }
